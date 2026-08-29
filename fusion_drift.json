@@ -4,30 +4,30 @@
  "metric": "2D position drift %",
  "A_model_speed_gyro_heading": {
   "n": 351,
-  "median": 25.42,
-  "mean": 35.5,
-  "p90": 75.85,
-  "pass_under_10": 11.7
+  "median": 75.62,
+  "mean": 92.03,
+  "p90": 184.71,
+  "pass_under_10": 2.3
  },
  "B_true_speed_gyro_heading": {
   "n": 351,
-  "median": 18.53,
-  "mean": 27.87,
-  "p90": 59.04,
-  "pass_under_10": 26.5
+  "median": 77.0,
+  "mean": 90.24,
+  "p90": 185.92,
+  "pass_under_10": 4.8
  },
- "E_model_speed_magcomp_heading": {
+ "G_model_speed_biascorr_heading": {
   "n": 351,
-  "median": 85.04,
-  "mean": 90.97,
-  "p90": 155.44,
-  "pass_under_10": 1.7
+  "median": 75.74,
+  "mean": 92.03,
+  "p90": 184.72,
+  "pass_under_10": 2.3
  },
- "F_true_speed_magcomp_heading": {
+ "H_true_speed_biascorr_heading": {
   "n": 351,
-  "median": 84.75,
-  "mean": 89.24,
-  "p90": 155.92,
+  "median": 77.32,
+  "mean": 90.24,
+  "p90": 186.1,
   "pass_under_10": 4.8
  },
  "along_track_distance_drift": {

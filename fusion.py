@@ -45,7 +45,8 @@ def gps_course(gx, gy, w=10):
 
 
 def calibrate_gain(course, gyro_yaw, speed):
-    """Least-squares gain k so that d(course) ~= k * gyro_yaw * dt, on moving samples."""
+    """Least-squares gain k so that d(course) ~= k * gyro_yaw * dt, on moving samples
+    (no intercept -> assumes zero gyro bias)."""
     dcourse = np.diff(np.unwrap(course))
     g = gyro_yaw[1:] * DT
     move = speed[1:] > 3.0
@@ -54,10 +55,28 @@ def calibrate_gain(course, gyro_yaw, speed):
     return float(np.sum(g * dcourse) / denom) if denom > 1e-9 else 0.0
 
 
-def dead_reckon(px, py, h, speeds, yaws, k):
-    """Integrate a segment with gyro-propagated heading: returns end (x, y)."""
+def calibrate_gain_bias(course, gyro_yaw, speed):
+    """Fit d(course)/step ~= k * gyro_yaw * DT + c0 on moving samples (WITH intercept).
+
+    The intercept c0 is the constant per-step heading error from gyro bias. Propagating
+    heading as h += k*gyro*DT + c0 removes that bias during a blackout. Returns (k, c0).
+    """
+    dcourse = np.diff(np.unwrap(course))
+    g = gyro_yaw[1:] * DT
+    move = speed[1:] > 3.0
+    g, dcourse = g[move], dcourse[move]
+    if len(g) < 10:
+        return calibrate_gain(course, gyro_yaw, speed), 0.0
+    A = np.column_stack([g, np.ones_like(g)])   # [gyro*dt, 1]
+    (k, c0), *_ = np.linalg.lstsq(A, dcourse, rcond=None)
+    return float(k), float(c0)
+
+
+def dead_reckon(px, py, h, speeds, yaws, k, c0=0.0):
+    """Integrate a segment with gyro-propagated heading: returns end (x, y).
+    c0 is the per-step gyro-bias correction (0 = uncorrected)."""
     for v, w in zip(speeds, yaws):
-        h += k * w * DT
+        h += k * w * DT + c0
         px += max(v, 0.0) * np.sin(h) * DT
         py += max(v, 0.0) * np.cos(h) * DT
     return px, py
@@ -88,21 +107,19 @@ def eval_drive(path, model, mean, std):
 
     gx, gy = latlon_to_m(lat, lon, np.nanmean(lat))
     course = gps_course(gx, gy)
-    k = calibrate_gain(course, gyro_yaw, tspeed)
+    k = calibrate_gain(course, gyro_yaw, tspeed)          # device-frame gyro yaw axis
 
-    # Magnetometer heading: per-sample device-frame heading, offset-calibrated to GPS course.
-    mag_head = magnetic_heading(d["grav"], d["mag"])
-    have_mag = np.isfinite(mag_head).any()
-    if have_mag:
-        offset = circular_offset(course, mag_head, tspeed > 3.0)
-        mag_head_abs = mag_head + offset
-    else:
-        mag_head_abs = np.full(n, np.nan)
+    # Correct turn rate = angular velocity projected onto the vertical (gravity) axis.
+    # The vehicle turns about vertical; the phone's device-yaw axis only matches it when the
+    # phone is flat. For a tilted mount, this projection is the physically correct yaw rate.
+    up = d["grav"] / (np.linalg.norm(d["grav"], axis=1, keepdims=True) + 1e-6)
+    gyro_vert = np.sum(d["gyro"] * up, axis=1)
+    kv, c0v = calibrate_gain_bias(course, gyro_vert, tspeed)  # gain + bias on the vertical axis
 
     step = np.sqrt(np.diff(gx) ** 2 + np.diff(gy) ** 2)
     cum = np.concatenate([[0], np.cumsum(step)])
 
-    out = {"A": [], "B": [], "E": [], "F": [], "dist_true": [], "dist_model": []}
+    out = {"A": [], "B": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
     start = WIN
     while start < n - 10:
         end = np.searchsorted(cum, cum[start] + TARGET_DIST)
@@ -112,6 +129,8 @@ def eval_drive(path, model, mean, std):
         if true_dist > 0:
             seg = slice(start, end)
             gyaw = gyro_yaw[seg]
+            # Seed heading from the GPS course at blackout start. (A 3 s circular-mean seed
+            # was tested and made drift much worse, so the single-sample seed is kept.)
             h0 = course[start]
             gx0, gy0 = gx[start], gy[start]
             # A: model speed + gyro heading -> the REAL system's 2D drift (gyro-only).
@@ -121,14 +140,13 @@ def eval_drive(path, model, mean, std):
             #    contribution; B is the drift floor from gyro-heading error alone.
             bx, by = dead_reckon(gx0, gy0, h0, tspeed[seg], gyaw, k)
             out["B"].append(np.hypot(bx - gx[end], by - gy[end]) / true_dist * 100)
-            # E / F: same as A / B but heading from the gyro+magnetometer complementary
-            #        filter instead of gyro alone. E = improved real system, F = new floor.
-            if have_mag:
-                comp = complementary_heading(h0, gyaw, k, mag_head_abs[seg])
-                ex, ey = dead_reckon_headings(gx0, gy0, mspeed[seg], comp)
-                out["E"].append(np.hypot(ex - gx[end], ey - gy[end]) / true_dist * 100)
-                fx, fy = dead_reckon_headings(gx0, gy0, tspeed[seg], comp)
-                out["F"].append(np.hypot(fx - gx[end], fy - gy[end]) / true_dist * 100)
+            # G / H: same as A / B but heading from the VERTICAL-AXIS (gravity-projected)
+            #        gyro rate + bias correction. G = improved real system, H = new floor.
+            gvseg = gyro_vert[seg]
+            gxx, gyy = dead_reckon(gx0, gy0, h0, mspeed[seg], gvseg, kv, c0v)
+            out["G"].append(np.hypot(gxx - gx[end], gyy - gy[end]) / true_dist * 100)
+            hxx, hyy = dead_reckon(gx0, gy0, h0, tspeed[seg], gvseg, kv, c0v)
+            out["H"].append(np.hypot(hxx - gx[end], hyy - gy[end]) / true_dist * 100)
             # Along-track distance drift (speed-only, heading-free), for reference.
             out["dist_true"].append(true_dist)
             out["dist_model"].append(float(np.sum(np.clip(mspeed[seg], 0, None)) * DT))
@@ -153,7 +171,7 @@ def main():
     test = set(cfg["files"]["test"])
     model = tf.keras.models.load_model(MODEL)
 
-    agg = {"A": [], "B": [], "E": [], "F": [], "dist_true": [], "dist_model": []}
+    agg = {"A": [], "B": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
     for f in sorted(glob.glob(os.path.join(HERE, "data", "S-*.csv"))):
         if os.path.basename(f) not in test:
             continue
@@ -168,19 +186,19 @@ def main():
         model=os.path.basename(MODEL), target_dist_m=TARGET_DIST, metric="2D position drift %",
         A_model_speed_gyro_heading=summarize(agg["A"]),
         B_true_speed_gyro_heading=summarize(agg["B"]),
-        E_model_speed_magcomp_heading=summarize(agg["E"]),
-        F_true_speed_magcomp_heading=summarize(agg["F"]),
+        G_model_speed_biascorr_heading=summarize(agg["G"]),
+        H_true_speed_biascorr_heading=summarize(agg["H"]),
         along_track_distance_drift=summarize(list(dist_drift)),
     )
     json.dump(result, open(os.path.join(HERE, "fusion_drift.json"), "w"), indent=1)
     print("2D POSITION DRIFT over 1 km blackouts (target < 10%):")
-    print("  A  model speed + GYRO heading (real, gyro-only): ", result["A_model_speed_gyro_heading"])
-    print("  B  TRUE  speed + GYRO heading (gyro floor):      ", result["B_true_speed_gyro_heading"])
-    print("  E  model speed + MAG+GYRO heading (real, filter):", result["E_model_speed_magcomp_heading"])
-    print("  F  TRUE  speed + MAG+GYRO heading (new floor):   ", result["F_true_speed_magcomp_heading"])
-    print("  along-track distance drift (speed only):         ", result["along_track_distance_drift"])
-    print("\n  Interpretation: A->E shows the heading-filter gain; B->F shows how much the")
-    print("  filter lowers the heading floor. If E << A, the magnetometer filter works.")
+    print("  A  model speed + gyro heading (real, no bias fix): ", result["A_model_speed_gyro_heading"])
+    print("  B  TRUE  speed + gyro heading (floor, no bias fix):", result["B_true_speed_gyro_heading"])
+    print("  G  model speed + VERTICAL-AXIS gyro (real):        ", result["G_model_speed_biascorr_heading"])
+    print("  H  TRUE  speed + VERTICAL-AXIS gyro (new floor):   ", result["H_true_speed_biascorr_heading"])
+    print("  along-track distance drift (speed only):           ", result["along_track_distance_drift"])
+    print("\n  Interpretation: A->G shows the bias-correction gain on the real system;")
+    print("  B->H shows how much bias correction lowers the heading floor.")
 
 
 if __name__ == "__main__":

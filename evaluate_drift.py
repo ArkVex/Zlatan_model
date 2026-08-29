@@ -72,7 +72,7 @@ def build_features_and_truth(path):
     good = np.isfinite(feat).all(1) & np.isfinite(speed) & np.isfinite(lat) & \
         np.isfinite(lon) & np.isfinite(hdg)
     return dict(feat=feat[good], speed=speed[good], gyro_yaw=gyro[good, 0],
-                lat=lat[good], lon=lon[good], hdg=hdg[good],
+                gyro=gyro[good], lat=lat[good], lon=lon[good], hdg=hdg[good],
                 grav=grav[good], mag=mag[good])
 
 
