@@ -51,6 +51,14 @@ def build_features_and_truth(path):
     speed = num(c["speed"])
     lat, lon = num(lat_c[0]), num(lon_c[0])
     hdg = num(hdg_c[0])
+    # Magnetometer (for the heading filter). Optional — absent -> zeros, flagged.
+    mx = [x for x in df.columns if "MAGNETIC FIELD X" in x.upper()]
+    my = [x for x in df.columns if "MAGNETIC FIELD Y" in x.upper()]
+    mz = [x for x in df.columns if "MAGNETIC FIELD Z" in x.upper()]
+    if mx and my and mz:
+        mag = np.stack([num(mx[0]), num(my[0]), num(mz[0])], 1)
+    else:
+        mag = np.full_like(grav, np.nan)
 
     a_lin = acc - grav
     g_hat = grav / (np.linalg.norm(grav, axis=1, keepdims=True) + 1e-6)
@@ -64,7 +72,8 @@ def build_features_and_truth(path):
     good = np.isfinite(feat).all(1) & np.isfinite(speed) & np.isfinite(lat) & \
         np.isfinite(lon) & np.isfinite(hdg)
     return dict(feat=feat[good], speed=speed[good], gyro_yaw=gyro[good, 0],
-                lat=lat[good], lon=lon[good], hdg=hdg[good])
+                lat=lat[good], lon=lon[good], hdg=hdg[good],
+                grav=grav[good], mag=mag[good])
 
 
 def latlon_to_m(lat, lon, lat0):

@@ -1,0 +1,40 @@
+{
+ "model": "model_tcn_tf.keras",
+ "target_dist_m": 1000.0,
+ "metric": "2D position drift %",
+ "A_model_speed_gyro_heading": {
+  "n": 351,
+  "median": 25.42,
+  "mean": 35.5,
+  "p90": 75.85,
+  "pass_under_10": 11.7
+ },
+ "B_true_speed_gyro_heading": {
+  "n": 351,
+  "median": 18.53,
+  "mean": 27.87,
+  "p90": 59.04,
+  "pass_under_10": 26.5
+ },
+ "E_model_speed_magcomp_heading": {
+  "n": 351,
+  "median": 85.04,
+  "mean": 90.97,
+  "p90": 155.44,
+  "pass_under_10": 1.7
+ },
+ "F_true_speed_magcomp_heading": {
+  "n": 351,
+  "median": 84.75,
+  "mean": 89.24,
+  "p90": 155.92,
+  "pass_under_10": 4.8
+ },
+ "along_track_distance_drift": {
+  "n": 351,
+  "median": 12.01,
+  "mean": 15.81,
+  "p90": 34.86,
+  "pass_under_10": 42.7
+ }
+}
