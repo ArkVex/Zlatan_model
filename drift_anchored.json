@@ -1,0 +1,18 @@
+{
+ "model": "model_tcn_tf.keras",
+ "target_dist_m": 1000.0,
+ "raw": {
+  "n": 351,
+  "median": 12.01,
+  "mean": 15.81,
+  "p90": 34.86,
+  "pass_under_10": 42.7
+ },
+ "anchored": {
+  "n": 351,
+  "median": 11.56,
+  "mean": 15.76,
+  "p90": 34.01,
+  "pass_under_10": 46.2
+ }
+}
