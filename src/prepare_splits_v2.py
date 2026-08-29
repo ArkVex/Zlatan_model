@@ -6,13 +6,13 @@ import numpy as np
 
 from dataset_v2 import load_file, FEATURES, WIN
 
-OUT = os.path.join(os.path.dirname(__file__), "splits_v2")
+from paths import SPLITS_V2 as OUT, DATA
 SEED = 42
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    files = sorted(glob.glob(os.path.join(os.path.dirname(__file__), "data", "S-*.csv")))
+    files = sorted(glob.glob(os.path.join(DATA, "S-*.csv")))
     rng = np.random.default_rng(SEED)
     files = [files[i] for i in rng.permutation(len(files))]
     n = len(files)

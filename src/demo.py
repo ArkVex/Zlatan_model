@@ -27,7 +27,7 @@ def destaircase(x, y):
     grid = np.arange(n)
     return np.interp(grid, idx, x[idx]), np.interp(grid, idx, y[idx])
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, DEMO
 SPLITS = os.path.join(HERE, "splits_v2")
 MODEL = os.path.join(HERE, "model_tcn_tf.keras")
 BLACKOUT_M = float(__import__("os").environ.get("BLACKOUT_M","300"))  # blackout length (m)
@@ -142,7 +142,7 @@ def export(best):
         blackout_start=LEAD, blackout_end=LEAD + (e - s),
         truth=truth, est=est, frozen=frozen, mode=mode, speed=speed,
     )
-    json.dump(data, open(os.path.join(HERE, "demo_data.json"), "w"))
+    json.dump(data, open(os.path.join(DEMO, "demo_data.json"), "w"))
     print(f"demo: {best['file']}  blackout {true_dist:.0f} m  along-track drift "
           f"{along_drift:.1f}%  frames {len(truth)}")
 

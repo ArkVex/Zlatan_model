@@ -14,7 +14,7 @@ from urllib.request import urlopen, Request
 REPO = "onyekpeu/IO-VNBD"
 BRANCH = "master"
 MEDIA_BASE = f"https://media.githubusercontent.com/media/{REPO}/{BRANCH}/"
-OUT_DIR = os.path.join(os.path.dirname(__file__), "data")
+from paths import DATA as OUT_DIR, SRC
 
 # How many files to pull this run (spread across categories). Set to None for all 144.
 LIMIT = int(sys.argv[1]) if len(sys.argv) > 1 else 40
@@ -64,7 +64,7 @@ def download(path):
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    paths = json.load(open(os.path.join(os.path.dirname(__file__), "sfile_paths.json")))
+    paths = json.load(open(os.path.join(SRC, "sfile_paths.json")))
     subset = pick_subset(paths, LIMIT)
     print(f"Downloading {len(subset)} of {len(paths)} S-files -> {OUT_DIR}")
     ok = 0

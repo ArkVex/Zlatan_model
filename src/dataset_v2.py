@@ -20,7 +20,7 @@ import os
 import numpy as np
 import pandas as pd
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+from paths import DATA as DATA_DIR
 WIN = 50
 STRIDE = 5
 

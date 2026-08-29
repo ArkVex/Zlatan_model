@@ -4,11 +4,15 @@ Lets the Android team build and parity-test the whole pipeline (sensor -> prepro
 model call -> output) against the real [1,50,7]->[1,1] interface before the real model
 exists. The stub ignores its input and returns a constant speed.
 """
+import os
 import numpy as np
 import tensorflow as tf
 
 WIN, C = 50, 7
 CONST_SPEED = 8.33   # m/s == 30 km/h
+
+
+from paths import EXPORTS
 
 
 def main():
@@ -22,7 +26,7 @@ def main():
 
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     tfl = conv.convert()
-    with open("engine_stub.tflite", "wb") as f:
+    with open(os.path.join(EXPORTS, "engine_stub.tflite"), "wb") as f:
         f.write(tfl)
 
     # Verify interface.
@@ -33,7 +37,7 @@ def main():
     it.invoke()
     out = it.get_tensor(do["index"])
     print(f"stub in {di['shape']} {di['dtype']} -> out {do['shape']} = {out.ravel()[0]:.2f} m/s")
-    print("wrote engine_stub.tflite")
+    print("wrote", os.path.join(EXPORTS, "engine_stub.tflite"))
 
 
 if __name__ == "__main__":

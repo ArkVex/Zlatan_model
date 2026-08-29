@@ -18,7 +18,7 @@ import tensorflow as tf
 from dataset_v2 import WIN, _resolve
 from evaluate_drift import build_features_and_truth, latlon_to_m, TARGET_DIST, DT
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, RESULTS
 SPLITS = os.path.join(HERE, "splits_v2")
 MODEL = os.path.join(HERE, os.environ.get("MODEL_FILE", "model_tcn_tf.keras"))
 
@@ -86,7 +86,7 @@ def main():
 
     out = dict(model=os.path.basename(MODEL), target_dist_m=TARGET_DIST,
                raw=summarize(raw_all), anchored=summarize(anch_all))
-    json.dump(out, open(os.path.join(HERE, "drift_anchored.json"), "w"), indent=1)
+    json.dump(out, open(os.path.join(RESULTS, "drift_anchored.json"), "w"), indent=1)
     print("DRIFT (raw model):     ", out["raw"])
     print("DRIFT (GPS-anchored):  ", out["anchored"])
 

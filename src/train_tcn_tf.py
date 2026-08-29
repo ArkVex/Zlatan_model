@@ -15,7 +15,7 @@ import tensorflow as tf
 
 from common_eval import metrics
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, RESULTS
 SPLITS = os.path.join(HERE, "splits_v2")
 SEED = 42
 EPOCHS = 20
@@ -81,7 +81,7 @@ def main():
     size_kb = os.path.getsize(os.path.join(HERE, "model_tcn_tf.keras")) / 1024
     result = dict(framework="tensorflow-tcn", test=m, params=int(n_params),
                   train_time_s=round(train_time, 1), model_size_kb=round(size_kb, 1))
-    json.dump(result, open(os.path.join(HERE, "results_tcn.json"), "w"), indent=1)
+    json.dump(result, open(os.path.join(RESULTS, "results_tcn.json"), "w"), indent=1)
     print("TCN TEST:", m, "| params", n_params, "| time", result["train_time_s"], "s")
 
 

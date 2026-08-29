@@ -3,7 +3,7 @@ import json
 import os
 import sys
 
-HERE = os.path.dirname(__file__)
+from paths import RESULTS as HERE
 TAG = sys.argv[1] if len(sys.argv) > 1 else ""   # e.g. "_v2"
 
 

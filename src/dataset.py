@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+from paths import DATA as DATA_DIR
 WIN = 20          # 20 samples @10Hz = 2.0 s of context
 STRIDE = 2        # hop between windows (0.2 s) -> more training samples
 

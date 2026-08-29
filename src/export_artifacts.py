@@ -18,7 +18,7 @@ import tensorflow as tf
 
 from dataset_v2 import WIN, _resolve, RAW_KEYS, FEATURES
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, EXPORTS
 SPLITS = os.path.join(HERE, "splits_v2")
 DATE = os.environ.get("DATE", "2026-08-29")
 HASH = os.environ.get("HASH", "dev")
@@ -99,7 +99,7 @@ def main():
     conv = tf.lite.TFLiteConverter.from_keras_model(model)
     conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
     tfl = conv.convert()
-    open(os.path.join(HERE, TFLITE), "wb").write(tfl)
+    open(os.path.join(EXPORTS, TFLITE), "wb").write(tfl)
     sha = hashlib.sha256(tfl).hexdigest()
 
     it = tf.lite.Interpreter(model_content=tfl); it.allocate_tensors()
@@ -117,7 +117,7 @@ def main():
         "computed_over": "train_split_only",
         "n_windows": int(np.load(os.path.join(SPLITS, "X_train.npy"), mmap_mode="r").shape[0]),
     }
-    json.dump(norm, open(os.path.join(HERE, "norm.json"), "w"), indent=1)
+    json.dump(norm, open(os.path.join(EXPORTS, "norm.json"), "w"), indent=1)
 
     # ---- testset.npz (hard cases) ----
     raws, feats, mean, std = collect_hardcase_windows(cfg)
@@ -127,7 +127,7 @@ def main():
     for i in range(len(norm_in)):
         it.set_tensor(di["index"], norm_in[i:i + 1]); it.invoke()
         tfl_out[i] = it.get_tensor(do["index"])[0]
-    np.savez(os.path.join(HERE, "testset.npz"),
+    np.savez(os.path.join(EXPORTS, "testset.npz"),
              raw_inputs=raws.astype(np.float32),      # [K,50,9] accel+gravity+gyro @10Hz
              raw_high_rate=raws.astype(np.float32),   # IO-VNBD is natively 10 Hz -> identical
              model_inputs=feats.astype(np.float32),   # [K,50,7] after compute_features
@@ -159,7 +159,7 @@ def main():
                              "expected_output_mps": round(sv_out, 5), "atol": 1e-3},
         "min_engine_version": "0.1.0",
     }
-    json.dump(manifest, open(os.path.join(HERE, "manifest.json"), "w"), indent=1)
+    json.dump(manifest, open(os.path.join(EXPORTS, "manifest.json"), "w"), indent=1)
 
     print(f"TFLITE  {TFLITE}  ({len(tfl)//1024} KB)  sha256 {sha[:12]}...")
     print(f"norm.json, manifest.json written")

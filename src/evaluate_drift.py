@@ -22,7 +22,7 @@ import tensorflow as tf
 
 from dataset_v2 import WIN, _resolve, RAW_KEYS
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, RESULTS
 SPLITS = os.path.join(HERE, "splits_v2")
 MODEL = os.path.join(HERE, os.environ.get("MODEL_FILE", "model_tf_v2.keras"))
 TARGET_DIST = 1000.0   # metres per simulated blackout
@@ -156,7 +156,7 @@ def main():
         p90_drift_pct=round(float(np.percentile(a, 90)), 2),
         pass_rate_under_10pct=round(float(np.mean(a < 10) * 100), 1),
     )
-    json.dump(summary, open(os.path.join(HERE, "drift_results.json"), "w"), indent=1)
+    json.dump(summary, open(os.path.join(RESULTS, "drift_results.json"), "w"), indent=1)
     print("\nDRIFT KPI (target <10%):")
     for k, v in summary.items():
         print(f"  {k}: {v}")

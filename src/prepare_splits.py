@@ -14,13 +14,13 @@ import numpy as np
 
 from dataset import load_file, FEATURES, WIN
 
-OUT = os.path.join(os.path.dirname(__file__), "splits")
+from paths import SPLITS as OUT, DATA
 SEED = 42
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    files = sorted(glob.glob(os.path.join(os.path.dirname(__file__), "data", "S-*.csv")))
+    files = sorted(glob.glob(os.path.join(DATA, "S-*.csv")))
 
     # Deterministic file-level shuffle, then 70/15/15 split by file.
     rng = np.random.default_rng(SEED)

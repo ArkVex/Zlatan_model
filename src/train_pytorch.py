@@ -9,7 +9,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 from common_eval import HP, metrics
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, RESULTS
 SPLITS = os.path.join(HERE, os.environ.get("SPLIT_DIR", "splits"))
 TAG = os.environ.get("TAG", "")   # e.g. "_v2" for round-2 outputs
 
@@ -92,7 +92,7 @@ def main():
         framework="pytorch", test=m, params=n_params,
         train_time_s=round(train_time, 1), model_size_kb=round(size_kb, 1),
     )
-    json.dump(result, open(os.path.join(HERE, f"results_pytorch{TAG}.json"), "w"), indent=1)
+    json.dump(result, open(os.path.join(RESULTS, f"results_pytorch{TAG}.json"), "w"), indent=1)
     print("PYTORCH TEST:", m, "| params", n_params,
           "| time", result["train_time_s"], "s")
 

@@ -26,7 +26,7 @@ from dataset_v2 import WIN
 from evaluate_drift import build_features_and_truth, latlon_to_m, TARGET_DIST, DT
 from heading import magnetic_heading, circular_offset, complementary_heading
 
-HERE = os.path.dirname(__file__)
+from paths import ROOT as HERE, RESULTS
 SPLITS = os.path.join(HERE, "splits_v2")
 MODEL = os.path.join(HERE, os.environ.get("MODEL_FILE", "model_tcn_tf.keras"))
 
@@ -190,7 +190,7 @@ def main():
         H_true_speed_biascorr_heading=summarize(agg["H"]),
         along_track_distance_drift=summarize(list(dist_drift)),
     )
-    json.dump(result, open(os.path.join(HERE, "fusion_drift.json"), "w"), indent=1)
+    json.dump(result, open(os.path.join(RESULTS, "fusion_drift.json"), "w"), indent=1)
     print("2D POSITION DRIFT over 1 km blackouts (target < 10%):")
     print("  A  model speed + gyro heading (real, no bias fix): ", result["A_model_speed_gyro_heading"])
     print("  B  TRUE  speed + gyro heading (floor, no bias fix):", result["B_true_speed_gyro_heading"])
