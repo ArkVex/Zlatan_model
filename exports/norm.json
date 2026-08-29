@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "model_version": "tcn_v1_2026-08-29_419ee90",
+ "model_version": "tcn_v2_2026-08-30_ft1",
  "channel_order": [
   "a_horiz",
   "a_vert",
@@ -13,22 +13,22 @@
  "input_norm": {
   "method": "standardize",
   "mean": [
-   1.603948,
-   0.040492,
-   1.742827,
-   -0.000353,
-   -0.003135,
-   0.000113,
-   0.193925
+   1.461656,
+   0.036587,
+   1.589435,
+   -0.000204,
+   -0.002693,
+   7.4e-05,
+   0.17919
   ],
   "std": [
-   1.552867,
-   0.724677,
-   1.575946,
-   0.114793,
-   0.231024,
-   0.137221,
-   0.219624
+   1.54406,
+   0.692043,
+   1.570045,
+   0.110904,
+   0.223628,
+   0.139897,
+   0.223736
   ]
  },
  "output_norm": {
@@ -40,6 +40,5 @@
   "gravity": "m/s^2",
   "gyro": "rad/s"
  },
- "computed_over": "train_split_only",
- "n_windows": 116821
+ "computed_over": "train_split_plus_negatives"
 }
