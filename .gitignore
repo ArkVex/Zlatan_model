@@ -10,3 +10,5 @@ model_*.keras
 *.tflite
 .DS_Store
 !engine_stub.tflite
+!engine_tcn_*.tflite
+!testset.npz

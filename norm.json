@@ -1,0 +1,45 @@
+{
+ "schema_version": 1,
+ "model_version": "tcn_v1_2026-08-29_419ee90",
+ "channel_order": [
+  "a_horiz",
+  "a_vert",
+  "a_lin_mag",
+  "gyr_y",
+  "gyr_p",
+  "gyr_r",
+  "gyro_mag"
+ ],
+ "input_norm": {
+  "method": "standardize",
+  "mean": [
+   1.603948,
+   0.040492,
+   1.742827,
+   -0.000353,
+   -0.003135,
+   0.000113,
+   0.193925
+  ],
+  "std": [
+   1.552867,
+   0.724677,
+   1.575946,
+   0.114793,
+   0.231024,
+   0.137221,
+   0.219624
+  ]
+ },
+ "output_norm": {
+  "method": "none",
+  "target": "forward_speed_mps"
+ },
+ "input_units": {
+  "accel": "m/s^2",
+  "gravity": "m/s^2",
+  "gyro": "rad/s"
+ },
+ "computed_over": "train_split_only",
+ "n_windows": 116821
+}
