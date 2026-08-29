@@ -1,0 +1,13 @@
+{
+ "framework": "pytorch",
+ "test": {
+  "mae_ms": 3.1558,
+  "rmse_ms": 4.2656,
+  "r2": 0.8204,
+  "mean_speed_ms": 16.1703,
+  "pct_error": 19.52
+ },
+ "params": 36481,
+ "train_time_s": 259.0,
+ "model_size_kb": 146.6
+}

@@ -1,0 +1,13 @@
+{
+ "framework": "tensorflow",
+ "test": {
+  "mae_ms": 4.4009,
+  "rmse_ms": 5.9293,
+  "r2": 0.6037,
+  "mean_speed_ms": 12.7594,
+  "pct_error": 34.49
+ },
+ "params": 36801,
+ "train_time_s": 125.5,
+ "model_size_kb": 464.9
+}

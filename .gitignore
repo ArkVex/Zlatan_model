@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+splits/
+splits_v2/
+*.log
+model_*.pt
+model_*.keras
+*.tflite
+.DS_Store
