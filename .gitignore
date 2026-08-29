@@ -9,3 +9,4 @@ model_*.pt
 model_*.keras
 *.tflite
 .DS_Store
+!engine_stub.tflite

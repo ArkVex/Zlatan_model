@@ -1,0 +1,8 @@
+{
+ "target_dist_m": 1000.0,
+ "n_segments": 351,
+ "median_drift_pct": 18.32,
+ "mean_drift_pct": 19.75,
+ "p90_drift_pct": 35.33,
+ "pass_rate_under_10pct": 19.1
+}
