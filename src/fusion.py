@@ -12,6 +12,7 @@ We measure THREE variants to decompose the error:
   A. model speed + gyro heading    -> the real system
   B. TRUE speed  + gyro heading    -> isolates HEADING error
   C. model speed + TRUE heading    -> isolates SPEED error
+  D. TRUE speed  + TRUE heading    -> the method's own floor (anchors C)
 Comparing A/B/C tells us whether to invest in a heading model or a better speed model.
 
 Usage: MODEL_FILE=model_tcn_tf.keras python fusion.py
@@ -119,7 +120,7 @@ def eval_drive(path, model, mean, std):
     step = np.sqrt(np.diff(gx) ** 2 + np.diff(gy) ** 2)
     cum = np.concatenate([[0], np.cumsum(step)])
 
-    out = {"A": [], "B": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
+    out = {"A": [], "B": [], "C": [], "D": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
     start = WIN
     while start < n - 10:
         end = np.searchsorted(cum, cum[start] + TARGET_DIST)
@@ -147,6 +148,19 @@ def eval_drive(path, model, mean, std):
             out["G"].append(np.hypot(gxx - gx[end], gyy - gy[end]) / true_dist * 100)
             hxx, hyy = dead_reckon(gx0, gy0, h0, tspeed[seg], gvseg, kv, c0v)
             out["H"].append(np.hypot(hxx - gx[end], hyy - gy[end]) / true_dist * 100)
+            # C: model speed + TRUE heading. The mirror of B, and the number the whole
+            #    heading work plan is sized against: what the CURRENT model would score if
+            #    heading were solved outright. B says a perfect speed oracle does not help;
+            #    C says how much a perfect heading oracle does. Near the along-track drift
+            #    means heading is the entire gap; well above it means the speed model still
+            #    needs substantial work and the schedule roughly doubles.
+            cxx, cyy = dead_reckon_headings(gx0, gy0, mspeed[seg], course[seg])
+            out["C"].append(np.hypot(cxx - gx[end], cyy - gy[end]) / true_dist * 100)
+            # D: TRUE speed + TRUE heading. The floor of the whole method -- everything left
+            #    here is GPS-course noise and integration error, not anything we can fix.
+            #    Without it, C is unanchored: a C of 8% means little if D is already 7%.
+            dxx, dyy = dead_reckon_headings(gx0, gy0, tspeed[seg], course[seg])
+            out["D"].append(np.hypot(dxx - gx[end], dyy - gy[end]) / true_dist * 100)
             # Along-track distance drift (speed-only, heading-free), for reference.
             out["dist_true"].append(true_dist)
             out["dist_model"].append(float(np.sum(np.clip(mspeed[seg], 0, None)) * DT))
@@ -171,7 +185,7 @@ def main():
     test = set(cfg["files"]["test"])
     model = tf.keras.models.load_model(MODEL)
 
-    agg = {"A": [], "B": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
+    agg = {"A": [], "B": [], "C": [], "D": [], "G": [], "H": [], "dist_true": [], "dist_model": []}
     for f in sorted(glob.glob(os.path.join(HERE, "data", "S-*.csv"))):
         if os.path.basename(f) not in test:
             continue
@@ -186,6 +200,8 @@ def main():
         model=os.path.basename(MODEL), target_dist_m=TARGET_DIST, metric="2D position drift %",
         A_model_speed_gyro_heading=summarize(agg["A"]),
         B_true_speed_gyro_heading=summarize(agg["B"]),
+        C_model_speed_true_heading=summarize(agg["C"]),
+        D_true_speed_true_heading=summarize(agg["D"]),
         G_model_speed_biascorr_heading=summarize(agg["G"]),
         H_true_speed_biascorr_heading=summarize(agg["H"]),
         along_track_distance_drift=summarize(list(dist_drift)),
@@ -194,11 +210,17 @@ def main():
     print("2D POSITION DRIFT over 1 km blackouts (target < 10%):")
     print("  A  model speed + gyro heading (real, no bias fix): ", result["A_model_speed_gyro_heading"])
     print("  B  TRUE  speed + gyro heading (floor, no bias fix):", result["B_true_speed_gyro_heading"])
+    print("  C  model speed + TRUE  heading (heading solved):    ", result["C_model_speed_true_heading"])
+    print("  D  TRUE  speed + TRUE  heading (method floor):      ", result["D_true_speed_true_heading"])
     print("  G  model speed + VERTICAL-AXIS gyro (real):        ", result["G_model_speed_biascorr_heading"])
     print("  H  TRUE  speed + VERTICAL-AXIS gyro (new floor):   ", result["H_true_speed_biascorr_heading"])
     print("  along-track distance drift (speed only):           ", result["along_track_distance_drift"])
     print("\n  Interpretation: A->G shows the bias-correction gain on the real system;")
     print("  B->H shows how much bias correction lowers the heading floor.")
+    print("  A vs B: perfect SPEED changes little -> speed is not the bottleneck.")
+    print("  A vs C: perfect HEADING is the ceiling available from the heading work plan.")
+    print("  C vs D: what is left after heading is solved, i.e. the speed model's real cost.")
+    print("  D:      the method's own floor -- GPS-course noise and integration error.")
 
 
 if __name__ == "__main__":
