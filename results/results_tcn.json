@@ -1,13 +1,13 @@
 {
  "framework": "tensorflow-tcn",
  "test": {
-  "mae_ms": 4.0623,
-  "rmse_ms": 5.3443,
-  "r2": 0.6631,
-  "mean_speed_ms": 19.1964,
-  "pct_error": 21.16
+  "mae_ms": 3.381,
+  "rmse_ms": 4.5333,
+  "r2": 0.7971,
+  "mean_speed_ms": 16.1703,
+  "pct_error": 20.91
  },
  "params": 115201,
- "train_time_s": 478.2,
+ "train_time_s": 492.5,
  "model_size_kb": 1444.0
 }

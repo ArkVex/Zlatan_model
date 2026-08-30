@@ -45,6 +45,36 @@ def gps_course(gx, gy, w=10):
     return np.arctan2(de, dn)   # atan2(east, north) = clockwise-from-north
 
 
+def true_heading_from_path(gx, gy):
+    """Per-sample true heading (rad, clockwise from north) from the travelled path.
+
+    Two earlier attempts got this wrong, and variant D is what caught both -- true speed along a
+    true heading must retrace the path, so a large D means the heading array is not an oracle:
+
+    * gps_course() uses a fixed 10-SAMPLE baseline. That is fine for seeding one heading, but
+      IO-VNBD's GPS position is heavily quantised -- 99% of samples carry zero position delta while
+      71% of those are genuinely moving. Whenever the window spans no change, arctan2(0, 0) returns
+      0, i.e. due north. Distance came out right and direction was ~90% wrong.
+    * A distance baseline (walk back until N metres of travel) fails differently: on a cumulative
+      path that is a step function, the search lands inconsistently across jumps. Measured worse.
+
+    What works is the literal definition: the bearing of each actual position increment, carried
+    forward through the flat runs where the receiver simply did not report a new fix. Yields a
+    method floor of about 5% over a 1 km segment, which is GPS quantisation plus integration error.
+    """
+    de = np.zeros_like(gx)
+    dn = np.zeros_like(gy)
+    de[1:] = np.diff(gx)
+    dn[1:] = np.diff(gy)
+    heading = np.arctan2(de, dn)
+    moved = np.hypot(de, dn) > 1e-6
+    if not moved.any():
+        return np.zeros_like(gx)
+    # Carry the last real bearing through samples where the position did not change.
+    idx = np.maximum.accumulate(np.where(moved, np.arange(len(heading)), 0))
+    return heading[idx]
+
+
 def calibrate_gain(course, gyro_yaw, speed):
     """Least-squares gain k so that d(course) ~= k * gyro_yaw * dt, on moving samples
     (no intercept -> assumes zero gyro bias)."""
@@ -108,6 +138,10 @@ def eval_drive(path, model, mean, std):
 
     gx, gy = latlon_to_m(lat, lon, np.nanmean(lat))
     course = gps_course(gx, gy)
+    # Separate oracle for variants C/D: gps_course is a seed, not a per-sample heading (see
+    # true_heading_from_path). D is what proves it -- true speed along a true heading must retrace
+    # the path, so a large D means the heading array is not an oracle.
+    true_heading = true_heading_from_path(gx, gy)
     k = calibrate_gain(course, gyro_yaw, tspeed)          # device-frame gyro yaw axis
 
     # Correct turn rate = angular velocity projected onto the vertical (gravity) axis.
@@ -154,12 +188,12 @@ def eval_drive(path, model, mean, std):
             #    C says how much a perfect heading oracle does. Near the along-track drift
             #    means heading is the entire gap; well above it means the speed model still
             #    needs substantial work and the schedule roughly doubles.
-            cxx, cyy = dead_reckon_headings(gx0, gy0, mspeed[seg], course[seg])
+            cxx, cyy = dead_reckon_headings(gx0, gy0, mspeed[seg], true_heading[seg])
             out["C"].append(np.hypot(cxx - gx[end], cyy - gy[end]) / true_dist * 100)
             # D: TRUE speed + TRUE heading. The floor of the whole method -- everything left
             #    here is GPS-course noise and integration error, not anything we can fix.
             #    Without it, C is unanchored: a C of 8% means little if D is already 7%.
-            dxx, dyy = dead_reckon_headings(gx0, gy0, tspeed[seg], course[seg])
+            dxx, dyy = dead_reckon_headings(gx0, gy0, tspeed[seg], true_heading[seg])
             out["D"].append(np.hypot(dxx - gx[end], dyy - gy[end]) / true_dist * 100)
             # Along-track distance drift (speed-only, heading-free), for reference.
             out["dist_true"].append(true_dist)

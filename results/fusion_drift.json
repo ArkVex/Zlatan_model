@@ -3,38 +3,52 @@
  "target_dist_m": 1000.0,
  "metric": "2D position drift %",
  "A_model_speed_gyro_heading": {
-  "n": 351,
-  "median": 75.62,
-  "mean": 92.03,
-  "p90": 184.71,
-  "pass_under_10": 2.3
+  "n": 186,
+  "median": 26.24,
+  "mean": 40.51,
+  "p90": 105.34,
+  "pass_under_10": 7.0
  },
  "B_true_speed_gyro_heading": {
-  "n": 351,
-  "median": 77.0,
-  "mean": 90.24,
-  "p90": 185.92,
-  "pass_under_10": 4.8
+  "n": 186,
+  "median": 22.27,
+  "mean": 33.84,
+  "p90": 94.45,
+  "pass_under_10": 24.7
+ },
+ "C_model_speed_true_heading": {
+  "n": 186,
+  "median": 13.76,
+  "mean": 15.37,
+  "p90": 25.47,
+  "pass_under_10": 28.5
+ },
+ "D_true_speed_true_heading": {
+  "n": 186,
+  "median": 6.6,
+  "mean": 7.45,
+  "p90": 15.08,
+  "pass_under_10": 72.0
  },
  "G_model_speed_biascorr_heading": {
-  "n": 351,
-  "median": 75.74,
-  "mean": 92.03,
-  "p90": 184.72,
-  "pass_under_10": 2.3
+  "n": 186,
+  "median": 26.26,
+  "mean": 40.82,
+  "p90": 109.75,
+  "pass_under_10": 7.0
  },
  "H_true_speed_biascorr_heading": {
-  "n": 351,
-  "median": 77.32,
-  "mean": 90.24,
-  "p90": 186.1,
-  "pass_under_10": 4.8
+  "n": 186,
+  "median": 22.46,
+  "mean": 34.19,
+  "p90": 97.24,
+  "pass_under_10": 24.7
  },
  "along_track_distance_drift": {
-  "n": 351,
-  "median": 12.01,
-  "mean": 15.81,
-  "p90": 34.86,
-  "pass_under_10": 42.7
+  "n": 186,
+  "median": 12.19,
+  "mean": 14.24,
+  "p90": 25.73,
+  "pass_under_10": 40.3
  }
 }
