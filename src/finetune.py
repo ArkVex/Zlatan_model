@@ -101,9 +101,30 @@ def main():
     Xte_d, yte_d = driving_windows(cfg["files"]["test"])
     print(f"driving: train {Xtr_d.shape} test {Xte_d.shape}")
 
-    # negatives (~15% of driving train), split so we can measure them
+    # negatives (~15% of driving train), split so we can measure them.
+    #
+    # TWO negative classes, kept separate on purpose. v2 only had the first:
+    #   handheld_*  — phone on a desk or in a hand. QUIET.
+    #   engine_*    — a powered vehicle stopped with the engine running. NOT quiet.
+    #
+    # Session tel_20260901 showed why the distinction matters: v2 reads a stopped-but-running
+    # motorbike at about 8 km/h, and the stopped/moving output distributions overlap so badly
+    # (stopped p90 6.47 above moving p50 6.13) that nothing downstream can separate them. Both
+    # classes are labelled 0 m/s, but their per-class error is reported apart below, because a v3
+    # that fixes hand-held and still misses engine-idle would look fine on a combined number.
+    #
+    # Build engine_* files with src/engine_running_negatives.py, which labels only the intervals
+    # GNSS independently confirms were stopped.
     neg_files = sorted(glob.glob(os.path.join(paths.ROOT, "negatives", "*.csv")))
+    engine_files = [f for f in neg_files if os.path.basename(f).startswith("engine_")]
+    handheld_files = [f for f in neg_files if not os.path.basename(f).startswith("engine_")]
+    if not engine_files:
+        print("WARNING: no engine_*.csv negatives found. v3's whole purpose is the "
+              "stopped-with-engine-running class; without it this is a v2 rebuild.")
     hh = np.concatenate([handheld_negatives(f) for f in neg_files]) if neg_files else np.zeros((0, WIN, 7), np.float32)
+    n_engine = sum(len(handheld_negatives(f)) for f in engine_files) if engine_files else 0
+    print(f"negative sources: {len(handheld_files)} handheld, {len(engine_files)} engine-running "
+          f"({n_engine} windows)")
     n_syn = max(int(0.12 * len(Xtr_d)) - len(hh), 2000)
     syn = synthetic_stationary(n_syn)
     Xneg = np.concatenate([hh, syn]); yneg = np.zeros(len(Xneg), np.float32)
