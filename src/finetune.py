@@ -59,6 +59,13 @@ def handheld_negatives(path, n_aug=8):
     a_horiz = np.linalg.norm(a_lin - a_vert[:, None] * g_hat, axis=1)
     feat = np.stack([a_horiz, a_vert, np.linalg.norm(a_lin, axis=1),
                      gyroD[:, 0], gyroD[:, 1], gyroD[:, 2], np.linalg.norm(gyroD, axis=1)], 1).astype(np.float32)
+    # A file can clear the 500-raw-row check and still be too short once decimated: 500 rows at
+    # 453 Hz is barely a second, and one window needs WIN samples at 10 Hz. Return empty rather
+    # than crash, so one thin negatives file cannot take down the whole retrain.
+    if len(feat) <= WIN:
+        print(f"  {os.path.basename(path)}: only {len(feat)} decimated samples, need >{WIN} "
+              f"({WIN / 10:.0f}s contiguous) — no windows, skipping")
+        return np.zeros((0, WIN, 7), np.float32)
     base = np.stack([feat[i:i + WIN] for i in range(0, len(feat) - WIN)])
     out = [base]
     for _ in range(n_aug):

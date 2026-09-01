@@ -156,7 +156,24 @@ def main():
 
     span = (kept[:, 0].max() - kept[:, 0].min()) / 1e9
     print(f"wrote {len(kept)} IMU rows -> {args.out}")
-    print(f"  {len(kept) / max(span, 1e-9):.0f} Hz over {span / 60:.1f} min of stopped-with-engine-running")
+
+    # Usable yield, not raw row count. A window is 50 samples at 10 Hz, so every window needs 5
+    # CONTIGUOUS seconds inside one confirmed-stopped interval. Short intervals contribute nothing,
+    # and reporting rows rather than windows would make an unusable file look productive.
+    WIN_S = 5.0
+    windows = sum(max(0, int(((b - a) / 1e9 - WIN_S) * 10)) for a, b in overlap)
+    stopped_min = sum(b - a for a, b in overlap) / 1e9 / 60
+    print(f"  {stopped_min:.1f} min of stopped-with-engine-running -> ~{windows} training windows")
+    if windows < 500:
+        print()
+        print(f"  NOT ENOUGH TO RETRAIN. Roughly 500+ windows (about 5 min of stopped time) is the")
+        print(f"  minimum worth fine-tuning on, and more matters less than VARIETY — aim for ~10")
+        print(f"  separate stops rather than one long one.")
+        print()
+        print(f"  The usual cause is blackout probes: while GNSS is muted there is no ground truth,")
+        print(f"  so those minutes cannot label anything. Collecting negatives and running blackout")
+        print(f"  probes are mutually exclusive uses of the same ride.")
+        return
     print("\nNext: add it to finetune.py's negatives glob and retrain as v3.")
     print("Keep it SEPARATE from the hand-held negatives when reporting results — the whole point")
     print("is that these two classes are different, so their per-class error should be read apart.")
