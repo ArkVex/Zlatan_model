@@ -1,4 +1,4 @@
-# SIH26168 — Speed-Estimation Model (IO-VNBD)
+# Zlatan — Speed-Estimation Model (IO-VNBD)
 
 Smartphone dead-reckoning speed model for the SIH26168 problem statement
 (Intelligent Dead Reckoning with GNSS/NavIC fusion). Trains a compact TCN that predicts
